@@ -4,7 +4,7 @@ Portal laboratorium keperawatan UIS untuk katalog alat, peminjaman, booking ruan
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `uv run python artifacts/api-server/manage.py runserver 0.0.0.0:$PORT` — run the Django API server
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -14,7 +14,7 @@ Portal laboratorium keperawatan UIS untuk katalog alat, peminjaman, booking ruan
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
+- API: Django 6 + Django REST Framework
 - DB: PostgreSQL + Drizzle ORM
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
@@ -23,7 +23,8 @@ Portal laboratorium keperawatan UIS untuk katalog alat, peminjaman, booking ruan
 ## Where things live
 
 - `artifacts/uis-health-lab` — React + Vite web application and route-aware UI.
-- `artifacts/api-server/src/routes/lab.ts` — REST handlers and initial lab seed data.
+- `artifacts/api-server/config` — Django project settings, URLs, and WSGI entrypoint.
+- `artifacts/api-server/lab` — DRF views, serializers, authentication, and Django models mapped to the existing PostgreSQL tables.
 - `lib/api-spec/openapi.yaml` — source of truth for generated API clients and validators.
 - `lib/db/src/schema/index.ts` — Drizzle schema for lab domain data.
 
@@ -31,7 +32,7 @@ Portal laboratorium keperawatan UIS untuk katalog alat, peminjaman, booking ruan
 
 - The first release keeps lending and room booking as separate workflows, each with its own approval path.
 - Clerk provides browser authentication; the public landing page stays accessible while workspace routes are protected.
-- The API seeds a small, useful starter dataset because the project intentionally begins without migrated portal data.
+- Django models use `managed = False` because the existing PostgreSQL tables were created by the shared schema package; Django is the active API runtime and does not attempt to recreate those tables.
 
 ## Product
 

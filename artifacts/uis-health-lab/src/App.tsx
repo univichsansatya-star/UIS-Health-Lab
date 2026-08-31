@@ -15,6 +15,7 @@ import {
   useListChecklist, useListNotifications, useMarkNotificationRead, useGetGuide, useUpdateGuide,
   getGetEquipmentQueryKey, getListLoanRequestsQueryKey, getListRoomBookingsQueryKey, getListNotificationsQueryKey,
   getGetGuideQueryKey,
+  setAuthTokenGetter,
 } from '@workspace/api-client-react';
 import type {
   Equipment, EquipmentCategory, LabRoom, LoanRequest, RoomBooking, StockItem, ChecklistItem,
@@ -243,7 +244,15 @@ function Router() {
 function ClerkApp() {
   const [, setLocation] = useLocation();
   const stripBase = (path: string) => basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
-  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={{ theme: shadcn }} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to))}><QueryClientProvider client={queryClient}><Router /></QueryClientProvider></ClerkProvider>;
+  return <ClerkProvider publishableKey={clerkPubKey} proxyUrl={clerkProxyUrl} appearance={{ theme: shadcn }} signInUrl={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} routerPush={(to) => setLocation(stripBase(to))} routerReplace={(to) => setLocation(stripBase(to))}><QueryClientProvider client={queryClient}><AuthTokenBridge /><Router /></QueryClientProvider></ClerkProvider>;
+}
+function AuthTokenBridge() {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(getToken);
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return null;
 }
 function App() { return <WouterRouter base={basePath}><TooltipProvider><ClerkApp /><Toaster /></TooltipProvider></WouterRouter>; }
 export default App;
