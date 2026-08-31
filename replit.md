@@ -1,6 +1,6 @@
-# [Project name]
+# UIS Health Lab
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Portal laboratorium keperawatan UIS untuk katalog alat, peminjaman, booking ruangan, stok, dan persetujuan laboran.
 
 ## Run & Operate
 
@@ -22,23 +22,28 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/uis-health-lab` — React + Vite web application and route-aware UI.
+- `artifacts/api-server/src/routes/lab.ts` — REST handlers and initial lab seed data.
+- `lib/api-spec/openapi.yaml` — source of truth for generated API clients and validators.
+- `lib/db/src/schema/index.ts` — Drizzle schema for lab domain data.
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The first release keeps lending and room booking as separate workflows, each with its own approval path.
+- Clerk provides browser authentication; the public landing page stays accessible while workspace routes are protected.
+- The API seeds a small, useful starter dataset because the project intentionally begins without migrated portal data.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Students can browse and request equipment, reserve lab rooms, follow request status, view notifications, and read the borrowing guide. Laborans can review approvals, see room status, inspect the three inventory types, manage the checklist, and edit the guide.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+The interface should preserve UIS blue as the primary identity and use red as a restrained accent, with accessible light and dark modes.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen` before using the generated hooks or schemas.
 
 ## Pointers
 

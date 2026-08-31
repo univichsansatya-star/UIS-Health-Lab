@@ -1,0 +1,122 @@
+# Prompt: Portal Peminjaman Alat & Ruangan Laboratorium Keperawatan — UIS Health Lab
+
+Gunakan prompt di bawah ini untuk AI coding assistant (Claude, dsb.) guna membangun aplikasi web.
+
+---
+
+## Konteks Proyek
+
+Bangun sebuah aplikasi web bernama **UIS Health Lab** untuk **Universitas Ichsan Satya (UIS)**. Aplikasi ini digunakan oleh mahasiswa program studi keperawatan untuk **meminjam alat laboratorium** dan **booking ruangan laboratorium** kampus, serta digunakan oleh laboran/admin lab untuk mengelola stok, persetujuan peminjaman, dan konten informasi.
+
+## Tech Stack
+
+- **Arsitektur repo**: Monorepo (backend dan frontend dalam satu repository)
+- **Backend**: Django + Django REST Framework (REST API)
+- **Frontend**: React (Vite)
+- **Autentikasi**: Registrasi & login wajib sebelum user dapat mengajukan peminjaman alat atau booking ruangan
+- **Database**: PostgreSQL (default rekomendasi; sesuaikan bila ada preferensi lain)
+
+## Aktor & Role
+
+Hanya dua role dalam sistem ini (tidak ada role dosen/instruktur maupun approval bertingkat lain):
+
+1. **Mahasiswa**
+   - Registrasi & login
+   - Melihat katalog alat (dengan filter & kategori)
+   - Mengajukan peminjaman alat
+   - Mengajukan booking ruangan lab
+   - Melihat riwayat/status peminjaman & booking miliknya ("Peminjaman Saya")
+   - Melihat/mengunduh Daftar Tilik (daftar alat lab)
+   - Menerima notifikasi in-app terkait status pengajuan
+
+2. **Laboran / Admin Lab**
+   - Mengelola stok: Stok Alat, Stok Barang Habis Pakai, Stok Pantom
+   - Approve/reject pengajuan peminjaman alat
+   - Approve/reject pengajuan booking ruangan
+   - Mengelola master data ruangan/lab
+   - Mengelola/mengunduh Daftar Tilik
+   - Mengedit konten pop-up "Panduan Peminjaman" di halaman depan
+   - Mencatat serah-terima alat (dipinjam) dan pengembalian
+
+## Modul & Fitur
+
+### 1. Autentikasi & Registrasi
+Mahasiswa wajib membuat akun dan login sebelum bisa mengakses fitur peminjaman alat maupun booking ruangan. Laboran/Admin punya akun terpisah dengan hak akses admin.
+
+### 2. Katalog Alat
+- Daftar alat dengan fitur filter
+- Dikelompokkan per kategori. Kategori awal (berdasarkan referensi visual yang ada):
+  - **Nursing Skills & KDK** — contoh: manikin IV arm, infus pump, set kateterisasi, NGT & perawatan luka
+  - **Emergency & Critical Care** — contoh: defibrillator AED trainer, suction pump, syringe pump, simulator CPR
+  - **Maternitas & Anak** — contoh: simulator persalinan NOELLE, dopler denyut jantung janin, timbangan bayi
+  - **Diagnostic & Vital Signs** — contoh: stetoskop Littmann, tensimeter aneroid, EKG 12-lead, pulse oximeter
+- Setiap kategori menampilkan jumlah alat tersedia dan tautan ke katalog detail per kategori
+
+### 3. Manajemen Stok
+Tiga jenis stok yang dikelola terpisah, masing-masing dengan filter sendiri:
+- **Stok Alat** — barang reusable, idealnya dilacak per unit/kondisi
+- **Stok Barang Habis Pakai** — dilacak berbasis kuantitas (consumable)
+- **Stok Pantom** — manikin, kemungkinan perlu tracking kondisi/jadwal perawatan
+
+### 4. Daftar Tilik
+- Daftar seluruh alat yang tersedia di lab (bukan checklist penilaian skill)
+- Dapat diekspor dalam format **Excel (.xlsx)** dan **PDF**
+- Punya fitur filter sendiri
+
+### 5. Master Data Ruangan / Lab
+Ditampilkan sebagai **daftar/list** (bukan denah visual interaktif), dikelompokkan per gedung dan lantai:
+
+| Gedung | Lantai | Ruangan/Lab |
+|---|---|---|
+| B | 1 | Lab Gerontic, Lab Komunitas, Lab Jiwa, Lab Keluarga |
+| B | 2 (atas Perpustakaan) | Lab Bayi, Lab INC |
+| B | 2 (atas Gino) | Lab Kespro, Lab PNC, Lab ANC |
+| B | 3 | Lab KMB, Lab Gawat Darurat |
+| B | 3 (Kelas) | Ruang Simulasi, Lab Anak |
+| B | 4 | Lab Keterampilan Dasar |
+| A | 2 | Lab OSCE |
+
+Setiap ruangan memiliki status (tersedia/terpakai/tutup) yang dapat ditampilkan real-time.
+
+### 6. Peminjaman Alat
+Alur status (state machine):
+
+`Diajukan → Disetujui / Ditolak (oleh Laboran) → Dipinjam → Dikembalikan`
+
+Tambahkan status **Terlambat** jika pengembalian melewati batas waktu yang ditentukan. Tidak menggunakan barcode/QR scan — proses peminjaman dilakukan manual (mahasiswa memilih alat dari daftar, laboran mencatat serah-terima secara manual).
+
+### 7. Booking Ruangan
+Modul **terpisah** dari Peminjaman Alat (bukan satu alur gabungan), dengan pola approval yang sama:
+
+`Diajukan → Disetujui / Ditolak (oleh Laboran) → Terjadwal`
+
+Mahasiswa memilih ruangan dan slot waktu; laboran melakukan approve/reject sebelum booking dianggap final.
+
+### 8. Panduan Peminjaman
+Konten informasi yang tampil sebagai pop-up di halaman depan. Kontennya harus **dapat diedit oleh Laboran/Admin** (bukan statis) — sediakan form/CMS sederhana untuk mengelola teks ini.
+
+### 9. Dashboard & Notifikasi
+- Dashboard ringkasan, berbeda tampilan untuk Mahasiswa vs Laboran/Admin
+- Menu "Peminjaman Saya" untuk riwayat & status pengajuan milik mahasiswa
+- Notifikasi in-app (ikon lonceng) setiap ada perubahan status pengajuan (disetujui/ditolak/jatuh tempo, dll.)
+
+## Desain UI/UX
+
+- **Referensi layout**: top navigation bar berisi logo + nama aplikasi, menu (Katalog Alat, Dashboard, Peminjaman Saya), indikator status lab, ikon notifikasi, dan profil user dengan badge role
+- **Tema warna**: terinspirasi dari logo UIS — **biru sebagai warna dominan/primary**, **merah sebagai aksen** (proporsi kecil, bukan warna dominan), putih/netral sebagai background utama
+- **Wajib mendukung mode gelap (dark mode)** dengan toggle light/dark:
+  - Pertahankan identitas biru & merah UIS di kedua mode
+  - Untuk mode gelap, gunakan biru yang sedikit lebih redup/desaturasi untuk elemen non-aksen agar tidak menyilaukan di atas background gelap, dan pastikan kontras teks tetap memenuhi standar aksesibilitas (WCAG AA minimal)
+  - Simpan preferensi tema user (light/dark) di sisi client
+- Tampilkan logo UIS di header aplikasi
+
+## Batasan & Ketentuan Tambahan
+
+- Sistem dimulai dari **data kosong** — tidak ada proses migrasi data dari portal lab lama
+- Hanya **2 role**: Mahasiswa dan Laboran/Admin Lab
+- Tidak ada fitur barcode/QR code scanning
+- Peminjaman alat dan booking ruangan adalah **dua modul terpisah**, keduanya memerlukan approval laboran
+
+---
+
+*Dokumen ini merangkum hasil diskusi requirement untuk pengembangan portal lab UIS. Gunakan sebagai instruksi awal untuk AI coding assistant dalam menyusun struktur monorepo (Django REST + React), data model, dan implementasi fitur di atas.*

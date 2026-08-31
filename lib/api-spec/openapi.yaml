@@ -3,13 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: UIS Health Lab laboratory lending and room booking API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: dashboard
+    description: Role-aware dashboard summaries
+  - name: catalog
+    description: Laboratory equipment catalog
+  - name: lending
+    description: Equipment lending requests
+  - name: rooms
+    description: Laboratory rooms and bookings
+  - name: inventory
+    description: Inventory and checklist data
+  - name: notifications
+    description: In-app notifications
+  - name: content
+    description: Editable laboratory guide content
 paths:
   /healthz:
     get:
@@ -24,7 +38,376 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get role-aware dashboard summary
+      parameters:
+        - $ref: "#/components/parameters/Role"
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+  /categories:
+    get:
+      operationId: listCategories
+      tags: [catalog]
+      summary: List equipment categories and availability
+      responses:
+        "200":
+          description: Equipment categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EquipmentCategory"
+  /equipment:
+    get:
+      operationId: listEquipment
+      tags: [catalog]
+      summary: List equipment with filters
+      parameters:
+        - name: category
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+        - name: availability
+          in: query
+          schema:
+            type: string
+            enum: [all, available, maintenance]
+      responses:
+        "200":
+          description: Equipment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Equipment"
+  /equipment/{equipmentId}:
+    get:
+      operationId: getEquipment
+      tags: [catalog]
+      summary: Get equipment details
+      parameters:
+        - $ref: "#/components/parameters/EquipmentId"
+      responses:
+        "200":
+          description: Equipment details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Equipment"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /loan-requests:
+    get:
+      operationId: listLoanRequests
+      tags: [lending]
+      summary: List lending requests
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [mine, all]
+            default: mine
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, submitted, approved, rejected, borrowed, returned, overdue]
+      responses:
+        "200":
+          description: Lending requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoanRequest"
+    post:
+      operationId: createLoanRequest
+      tags: [lending]
+      summary: Submit an equipment lending request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoanRequestInput"
+      responses:
+        "201":
+          description: Submitted request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanRequest"
+  /loan-requests/{requestId}/decision:
+    patch:
+      operationId: decideLoanRequest
+      tags: [lending]
+      summary: Approve or reject a lending request
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInput"
+      responses:
+        "200":
+          description: Updated request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanRequest"
+  /loan-requests/{requestId}/handover:
+    patch:
+      operationId: handoverLoanRequest
+      tags: [lending]
+      summary: Record manual equipment handover
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: Borrowed request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanRequest"
+  /loan-requests/{requestId}/return:
+    patch:
+      operationId: returnLoanRequest
+      tags: [lending]
+      summary: Record equipment return
+      parameters:
+        - $ref: "#/components/parameters/RequestId"
+      responses:
+        "200":
+          description: Returned request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoanRequest"
+  /rooms:
+    get:
+      operationId: listRooms
+      tags: [rooms]
+      summary: List laboratory rooms grouped by building and floor
+      responses:
+        "200":
+          description: Rooms
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LabRoom"
+  /room-bookings:
+    get:
+      operationId: listRoomBookings
+      tags: [rooms]
+      summary: List room bookings
+      parameters:
+        - name: scope
+          in: query
+          schema:
+            type: string
+            enum: [mine, all]
+            default: mine
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [all, submitted, approved, rejected, scheduled]
+      responses:
+        "200":
+          description: Room bookings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoomBooking"
+    post:
+      operationId: createRoomBooking
+      tags: [rooms]
+      summary: Submit a room booking request
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoomBookingInput"
+      responses:
+        "201":
+          description: Submitted booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomBooking"
+  /room-bookings/{bookingId}/decision:
+    patch:
+      operationId: decideRoomBooking
+      tags: [rooms]
+      summary: Approve or reject a room booking
+      parameters:
+        - $ref: "#/components/parameters/BookingId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInput"
+      responses:
+        "200":
+          description: Updated booking
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoomBooking"
+  /stock:
+    get:
+      operationId: listStock
+      tags: [inventory]
+      summary: List inventory by stock type
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [equipment, consumable, mannequin]
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Inventory items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StockItem"
+  /checklist:
+    get:
+      operationId: listChecklist
+      tags: [inventory]
+      summary: List equipment checklist items
+      parameters:
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Checklist items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChecklistItem"
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      responses:
+        "200":
+          description: In-app notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /notifications/{notificationId}/read:
+    patch:
+      operationId: markNotificationRead
+      tags: [notifications]
+      parameters:
+        - $ref: "#/components/parameters/NotificationId"
+      responses:
+        "200":
+          description: Updated notification
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+  /guide:
+    get:
+      operationId: getGuide
+      tags: [content]
+      summary: Get the borrowing guide
+      responses:
+        "200":
+          description: Borrowing guide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guide"
+    patch:
+      operationId: updateGuide
+      tags: [content]
+      summary: Update the borrowing guide
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuideInput"
+      responses:
+        "200":
+          description: Updated guide
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Guide"
 components:
+  parameters:
+    Role:
+      name: role
+      in: query
+      schema:
+        type: string
+        enum: [student, laboran]
+        default: student
+    EquipmentId:
+      name: equipmentId
+      in: path
+      required: true
+      schema: { type: string }
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      schema: { type: string }
+    BookingId:
+      name: bookingId
+      in: path
+      required: true
+      schema: { type: string }
+    NotificationId:
+      name: notificationId
+      in: path
+      required: true
+      schema: { type: string }
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +416,213 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+    EquipmentCategory:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        shortName: { type: string }
+        description: { type: string }
+        availableCount: { type: number }
+        totalCount: { type: number }
+      required: [id, name, shortName, description, availableCount, totalCount]
+    Equipment:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        categoryId: { type: string }
+        description: { type: string }
+        location: { type: string }
+        availableUnits: { type: number }
+        totalUnits: { type: number }
+        condition:
+          type: string
+          enum: [good, maintenance, unavailable]
+        image: { type: string }
+        isPopular: { type: boolean }
+      required: [id, name, category, categoryId, description, location, availableUnits, totalUnits, condition, image, isPopular]
+    LabRoom:
+      type: object
+      properties:
+        id: { type: string }
+        building: { type: string }
+        floor: { type: string }
+        name: { type: string }
+        status:
+          type: string
+          enum: [available, occupied, closed]
+        capacity: { type: number }
+        description: { type: string }
+      required: [id, building, floor, name, status, capacity, description]
+    LoanRequestInput:
+      type: object
+      properties:
+        equipmentId: { type: string }
+        quantity: { type: number, minimum: 1 }
+        purpose: { type: string, minLength: 1 }
+        borrowDate: { type: string, format: date }
+        returnDate: { type: string, format: date }
+      required: [equipmentId, quantity, purpose, borrowDate, returnDate]
+    LoanRequest:
+      type: object
+      properties:
+        id: { type: string }
+        equipmentId: { type: string }
+        equipmentName: { type: string }
+        studentName: { type: string }
+        studentId: { type: string }
+        quantity: { type: number }
+        purpose: { type: string }
+        borrowDate: { type: string, format: date }
+        returnDate: { type: string, format: date }
+        status:
+          type: string
+          enum: [submitted, approved, rejected, borrowed, returned, overdue]
+        submittedAt: { type: string, format: date-time }
+        decisionNote: { type: ["string", "null"] }
+      required: [id, equipmentId, equipmentName, studentName, studentId, quantity, purpose, borrowDate, returnDate, status, submittedAt, decisionNote]
+    DecisionInput:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum: [approved, rejected]
+        note: { type: string }
+      required: [decision]
+    RoomBookingInput:
+      type: object
+      properties:
+        roomId: { type: string }
+        purpose: { type: string, minLength: 1 }
+        date: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        attendees: { type: number, minimum: 1 }
+      required: [roomId, purpose, date, startTime, endTime, attendees]
+    RoomBooking:
+      type: object
+      properties:
+        id: { type: string }
+        roomId: { type: string }
+        roomName: { type: string }
+        studentName: { type: string }
+        studentId: { type: string }
+        purpose: { type: string }
+        date: { type: string, format: date }
+        startTime: { type: string }
+        endTime: { type: string }
+        attendees: { type: number }
+        status:
+          type: string
+          enum: [submitted, approved, rejected, scheduled]
+        submittedAt: { type: string, format: date-time }
+        decisionNote: { type: ["string", "null"] }
+      required: [id, roomId, roomName, studentName, studentId, purpose, date, startTime, endTime, attendees, status, submittedAt, decisionNote]
+    StockItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        type:
+          type: string
+          enum: [equipment, consumable, mannequin]
+        category: { type: string }
+        quantity: { type: number }
+        unit: { type: string }
+        condition:
+          type: string
+          enum: [good, maintenance, low, unavailable]
+        lastUpdated: { type: string, format: date }
+      required: [id, name, type, category, quantity, unit, condition, lastUpdated]
+    ChecklistItem:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        category: { type: string }
+        quantity: { type: number }
+        location: { type: string }
+        condition:
+          type: string
+          enum: [good, maintenance, unavailable]
+      required: [id, name, category, quantity, location, condition]
+    Notification:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        message: { type: string }
+        type:
+          type: string
+          enum: [approval, rejection, overdue, reminder, system]
+        createdAt: { type: string, format: date-time }
+        isRead: { type: boolean }
+      required: [id, title, message, type, createdAt, isRead]
+    Guide:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        intro: { type: string }
+        steps:
+          type: array
+          items: { type: string }
+        updatedAt: { type: string, format: date-time }
+      required: [id, title, intro, steps, updatedAt]
+    GuideInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        intro: { type: string, minLength: 1 }
+        steps:
+          type: array
+          items: { type: string, minLength: 1 }
+      required: [title, intro, steps]
+    DashboardSummary:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [student, laboran]
+        greeting: { type: string }
+        stats:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardStat"
+        recentActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/Activity"
+        labStatus:
+          type: string
+        labStatusDetail: { type: string }
+      required: [role, greeting, stats, recentActivity, labStatus, labStatusDetail]
+    DashboardStat:
+      type: object
+      properties:
+        label: { type: string }
+        value: { type: string }
+        detail: { type: string }
+        tone:
+          type: string
+          enum: [blue, red, green, amber]
+      required: [label, value, detail, tone]
+    Activity:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        time: { type: string }
+        type:
+          type: string
+          enum: [loan, room, stock, system]
+      required: [id, title, description, time, type]
 

@@ -1,0 +1,1 @@
+- [Clerk package alignment](clerk-package-alignment.md) — verify registry-available Clerk versions and align shared majors before wiring auth imports.

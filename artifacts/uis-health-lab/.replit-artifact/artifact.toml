@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "UIS Health Lab"
+description = "Portal laboratorium keperawatan Universitas Ichsan Satya untuk katalog alat, peminjaman, booking ruangan, pengelolaan stok, dan persetujuan laboran."
+version = "1.0.0"
+id = "artifacts/uis-health-lab"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21150
+
+[services.development]
+run = "pnpm --filter @workspace/uis-health-lab run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/uis-health-lab", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/uis-health-lab/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21150"
+BASE_PATH = "/"
